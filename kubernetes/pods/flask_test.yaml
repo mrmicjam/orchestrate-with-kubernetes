@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: flask_test
+  name: flask-test
   labels:
-    app: flask_test
+    app: flask-test
 spec:
   containers:
-    - name: flask_test
+    - name: flask-test
       image: gcr.io/simplebrs-dev/flask_test
       ports:
         - name: http
