@@ -1,6 +1,11 @@
 # The Dockerfile defines the image's environment
 # Import Python runtime and set up working directory
-FROM python:3.7
+FROM gcr.io/google-appengine/python
+
+RUN virtualenv -p python3.7 /env
+ENV VIRTUAL_ENV /env
+ENV PATH /env/bin:$PATH
+
 WORKDIR /app
 ADD . /app
 
