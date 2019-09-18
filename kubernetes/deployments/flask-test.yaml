@@ -1,0 +1,19 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: flask-test
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: flask-test
+        track: stable
+        version: 1.0.0
+    spec:
+      containers:
+        - name: flask-test
+          image: "gcr.io/simplebrs-dev/flask_test"
+          ports:
+            - name: http
+              containerPort: 80
