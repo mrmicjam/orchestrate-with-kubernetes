@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: flask_test
+  labels:
+    app: flask_test
+spec:
+  containers:
+    - name: flask_test
+      image: gcr.io/simplebrs-dev/flask_test
+      ports:
+        - name: http
+          containerPort: 80
+      resources:
+        limits:
+          cpu: 0.2
+          memory: "10Mi"
