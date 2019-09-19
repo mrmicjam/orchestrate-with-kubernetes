@@ -1,7 +1,7 @@
-<h2>Saving {{ num_products }} products</h2>
+<h2>Saving {{ num_products }} social_socialaggs</h2>
 
 {% for product, delta in products %}
-  <p>{{ product['name'] }}: {{ delta }}</p>
+  <p>{{ product['id'] }}: {{ delta }}</p>
 {% endfor %}
 
 {% if microseconds %}
