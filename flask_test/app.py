@@ -21,7 +21,7 @@ def product_test():
 		product.update({'rel_6_34_backup_pricing_unit': 'ci'})
 	datastore_client.put(products)
 	delta = datetime.datetime.now() - start
-	return render_template('index.html', products=products, seconds=delta.seconds)
+	return render_template('index.html', products=products, seconds=delta.seconds, num_products=len(list(products)))
 
 
 @app.route('/product_test_loop_put')
@@ -33,7 +33,7 @@ def product_test_loop_put():
 	for product in products:
 		datastore_client.put(product)
 	delta = datetime.datetime.now() - start
-	return render_template('index.html', products=products, seconds=delta.seconds)
+	return render_template('index.html', products=products, seconds=delta.seconds, num_products=len(list(products)))
 
 
 if __name__ == "__main__":
