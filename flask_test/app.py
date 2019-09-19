@@ -23,7 +23,7 @@ def product_test_loop_put():
 		datastore_client.put(product)
 		display_products.append(product)
 	delta = datetime.datetime.now() - start
-	return render_template('index.html', products=display_products, seconds=delta.seconds, num_products=100)
+	return render_template('index.html', products=display_products, microseconds=delta.microseconds, num_products=100)
 
 
 if __name__ == "__main__":
