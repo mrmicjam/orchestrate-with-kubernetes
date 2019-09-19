@@ -11,18 +11,7 @@ app = Flask(__name__)
 @app.route('/')
 def root():
     products = datastore_client.query(kind="deal_product").fetch(limit=5)
-    return render_template('index.html', products=products)
-
-@app.route('/product_test')
-def product_test():
-	start = datetime.datetime.now()
-	products = datastore_client.query(kind="deal_product").fetch(limit=100)
-	for product in products:
-		product.update({'rel_6_34_backup_pricing_unit': 'ci'})
-	datastore_client.put(products)
-	delta = datetime.datetime.now() - start
-	return render_template('index.html', products=products, seconds=delta.seconds, num_products=len(list(products)))
-
+    return render_template('index.html', products=products, num_products=5)
 
 @app.route('/product_test_loop_put')
 def product_test_loop_put():
@@ -30,10 +19,9 @@ def product_test_loop_put():
 	products = datastore_client.query(kind="deal_product").fetch(limit=100)
 	for product in products:
 		product.update({'rel_6_34_backup_pricing_unit': 'ci'})
-	for product in products:
 		datastore_client.put(product)
 	delta = datetime.datetime.now() - start
-	return render_template('index.html', products=products, seconds=delta.seconds, num_products=len(list(products)))
+	return render_template('index.html', products=products, seconds=delta.seconds, num_products=100)
 
 
 if __name__ == "__main__":
