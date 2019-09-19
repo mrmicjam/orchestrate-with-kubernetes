@@ -17,11 +17,13 @@ def root():
 def product_test_loop_put():
 	start = datetime.datetime.now()
 	products = datastore_client.query(kind="deal_product").fetch(limit=100)
+	display_products = []
 	for product in products:
 		product.update({'rel_6_34_backup_pricing_unit': 'ci'})
 		datastore_client.put(product)
+		display_products.append(product)
 	delta = datetime.datetime.now() - start
-	return render_template('index.html', products=products, seconds=delta.seconds, num_products=100)
+	return render_template('index.html', products=display_products, seconds=delta.seconds, num_products=100)
 
 
 if __name__ == "__main__":
