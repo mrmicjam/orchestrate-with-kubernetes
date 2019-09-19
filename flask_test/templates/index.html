@@ -1,4 +1,4 @@
-<h2>First {{ len( products ) }} products</h2>
+<h2>First {{ products|length }} products</h2>
 {% for product in products %}
   <p>{{ product['name'] }}</p>
 {% endfor %}
