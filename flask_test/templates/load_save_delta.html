@@ -1,0 +1,14 @@
+<h2>Loading {{ num_products }} products</h2>
+
+{% for product in products %}
+  <p>{{ product['name'] }}</p>
+{% endfor %}
+
+{% if delta_load %}
+	<h2>Total load microseconds: {{ delta_load }}</h2>
+{% endif %}
+
+
+{% if delta_save %}
+	<h2>Total save microseconds: {{ delta_save }}</h2>
+{% endif %}
