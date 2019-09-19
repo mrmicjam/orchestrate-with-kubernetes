@@ -17,7 +17,7 @@ def root():
 def product_test():
 	start = datetime.datetime.now()
 
-	products = datastore_client.query(kind="deal_product").fetch(limit=100)
+	products = datastore_client.query(kind="social_socialagg").fetch(limit=100)
 	display_products = []
 	for product in products:
 		display_products.append(product)
@@ -39,7 +39,7 @@ def product_test():
 @app.route('/product_test_loop_put')
 def product_test_loop_put():
 	start = datetime.datetime.now()
-	products = datastore_client.query(kind="deal_product").fetch(limit=100)
+	products = datastore_client.query(kind="social_socialagg").fetch(limit=100)
 	display_products = []
 	delta_each = []
 	for product in products:
@@ -50,7 +50,8 @@ def product_test_loop_put():
 		display_products.append([product, delta.microseconds])
 	delta = datetime.datetime.now() - start
 	return render_template('save_each.html', products=display_products, 
-		microseconds=delta.microseconds, num_products=len(display_products)
+		microseconds=delta.microseconds, num_products=len(display_products),
+		project=datastore_client.project
 		)
 
 
