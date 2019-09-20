@@ -32,8 +32,8 @@ def product_test():
 	delta_save = datetime.datetime.now() - start	
 
 	return render_template('load_save_delta.html', products=display_products, 
-		delta_load=delta_load.microseconds, num_products=len(display_products),
-		delta_save=delta_save.microseconds
+		delta_load=delta_load.total_seconds(), num_products=len(display_products),
+		delta_save=delta_save.total_seconds()
 		)
 
 @app.route('/product_test_loop_put')
@@ -47,10 +47,10 @@ def product_test_loop_put():
 		product.update({'rel_6_34_backup_pricing_unit': 'ci'})
 		datastore_client.put(product)
 		delta = datetime.datetime.now() - start_each
-		display_products.append([product, delta.microseconds])
+		display_products.append([product, delta.total_seconds()])
 	delta = datetime.datetime.now() - start
 	return render_template('save_each.html', products=display_products, 
-		microseconds=delta.microseconds, num_products=len(display_products),
+		microseconds=delta.total_seconds(), num_products=len(display_products),
 		project=datastore_client.project
 		)
 

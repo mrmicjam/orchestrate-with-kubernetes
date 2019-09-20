@@ -1,4 +1,10 @@
-<h1>{{project}}</h1>
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+<h1>Project: {{ project }}</h1>
 <h2>Saving {{ num_products }} social_socialaggs</h2>
 
 {% for product, delta in products %}
@@ -6,6 +12,9 @@
 {% endfor %}
 
 {% if microseconds %}
-	<h2>Total save microseconds: {{ microseconds }}</h2>
+	<h2>Total save seconds: {{ microseconds }}</h2>
 {% endif %}
 
+
+</body>
+</html>
