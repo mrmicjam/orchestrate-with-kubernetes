@@ -101,7 +101,8 @@ export default {
       axios.post(path, payload)
         .then((res) => {
           // updates
-          this.$router.push({ path: `/hello` });
+            this.$router.push({ path: `/products/${res.data.distributor}` });
+          // this.$router.push({ path: `/hello` });
         })
         .catch((error) => {
           // eslint-disable-next-line

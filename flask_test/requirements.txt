@@ -1,7 +1,8 @@
 # This file defines the image's dependencies
 Flask
 Flask-RESTful
-google-cloud-datastore==1.7.3
+google-cloud-datastore
+google-cloud-storage
 pyzipcode3
 geopy
 flask_restful
@@ -11,3 +12,9 @@ Werkzeug
 flask_admin
 sqlalchemy
 stripe
+flask_marshmallow
+flask-login
+flask_session
+flask_sqlalchemy
+marshmallow-sqlalchemy
+flask_wtf

@@ -1,6 +1,8 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, Text, DateTime
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
 import datetime
 
@@ -39,6 +41,10 @@ class Product(Base):
     description = Column(Text, nullable=True)
     base_price = Column(Integer, nullable=False)
     retail_products = relationship("RetailProduct", backref=backref("product", uselist=False))
+    image = Column(String(500), nullable=False)
+
+    def __repr__(self):
+        return self.name
 
 
 class RetailProduct(Base):
@@ -48,6 +54,19 @@ class RetailProduct(Base):
     distributor_id = Column(Integer, ForeignKey('distributors.id'))
     product_id = Column(Integer, ForeignKey('products.id'))
     price = Column(Integer, nullable=False)
+
+    @property
+    def name(self):
+        return self.product.name
+
+    @property
+    def description(self):
+        return self.product.description
+
+    @property
+    def image(self):
+        return self.product.image
+
 
 
 class Order(Base):
@@ -74,3 +93,27 @@ class OrderItem(Base):
     order_id = Column(Integer, ForeignKey('orders.id'))
     purchase_price = Column(Integer, nullable=False)
     qty = Column(Integer, nullable=False)
+
+
+class User(UserMixin, Base):
+    """Model for user accounts."""
+
+    __tablename__ = 'flasklogin-users'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False, unique=False)
+    email = Column(String(40), unique=True, nullable=False)
+    password = Column(String(200), primary_key=False, unique=False, nullable=False)
+    created_on = Column(DateTime, index=False, unique=False, nullable=True)
+    last_login = Column(DateTime, index=False, unique=False,nullable=True)
+
+    def set_password(self, password):
+        """Create hashed password."""
+        self.password = generate_password_hash(password, method='sha256')
+
+    def check_password(self, password):
+        """Check hashed password."""
+        return check_password_hash(self.password, password)
+
+    def __repr__(self):
+        return '<User {}>'.format(self.name)
