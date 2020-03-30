@@ -3,8 +3,10 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import func
 
 import datetime
+import decimal
 
 Base = declarative_base()
 
@@ -22,6 +24,7 @@ class Distributor(Base):
        return self.title
 
 
+
 class Zip(Base):
     __tablename__ = 'zips'
 
@@ -33,10 +36,22 @@ class Zip(Base):
         return self.zip_code
 
 
+class ProductCategory(Base):
+    __tablename__ = 'product_categories'
+
+    name = Column(String(500), primary_key=True)
+
+    products = relationship("Product",  backref=backref("category", uselist=False))
+
+    def __repr__(self):
+        return self.name
+
+
 class Product(Base):
     __tablename__ = 'products'
 
     id = Column(Integer, primary_key=True)
+    product_category = Column(String(500), ForeignKey('product_categories.name'))
     name = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
     base_price = Column(Integer, nullable=False)
@@ -54,6 +69,12 @@ class RetailProduct(Base):
     distributor_id = Column(Integer, ForeignKey('distributors.id'))
     product_id = Column(Integer, ForeignKey('products.id'))
     price = Column(Integer, nullable=False)
+    distributor_daily_limit = Column(Integer, nullable=True)
+    order_daily_limit = Column(Integer, nullable=True)
+    order_items = relationship("OrderItem", backref=backref("retail_product", uselist=False))
+
+    def __repr__(self):
+        return "{} - {}".format(self.product.name, self.distributor.title)
 
     @property
     def name(self):
@@ -67,6 +88,21 @@ class RetailProduct(Base):
     def image(self):
         return self.product.image
 
+    @property
+    def display_price(self):
+        return "${}".format((decimal.Decimal(self.price) / decimal.Decimal("100.0")).quantize(decimal.Decimal('0.00')))
+
+    @property
+    def can_order(self):
+        if self.distributor_daily_limit is None:
+            return True
+        # check if order limit for distributor reached
+        from session import db_session
+        total_orders = db_session.query(func.count(OrderItem.qty).label('total')).join(Order).filter(
+            OrderItem.retail_product_id == self.id).filter(Order.created_at >= datetime.date.today()).first()[0]
+        if total_orders >= self.distributor_daily_limit:
+            return False
+        return True
 
 
 class Order(Base):
@@ -83,8 +119,10 @@ class Order(Base):
     payed_at = Column(DateTime, nullable=True)
     name = Column(String(500), nullable=False)
     email = Column(String(500), nullable=False)
-    phone = Column(String(100), nullable=False)
+    phone = Column(String(100), nullable=True)
 
+    def __repr__(self):
+        return "{} -  {}, {}, {}".format(self.id, self.name, self.city, self.state)
 
 class OrderItem(Base):
     __tablename__ = 'order_items'
@@ -93,6 +131,10 @@ class OrderItem(Base):
     order_id = Column(Integer, ForeignKey('orders.id'))
     purchase_price = Column(Integer, nullable=False)
     qty = Column(Integer, nullable=False)
+    retail_product_id = Column(Integer, ForeignKey('retail_products.id'))
+
+    def __repr__(self):
+        return "{} -  {} {}X{}".format(self.order_id, self.retail_product_id, self.qty, self.purchase_price)
 
 
 class User(UserMixin, Base):

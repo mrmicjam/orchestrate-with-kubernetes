@@ -15,7 +15,7 @@ import os
 from forms import LoginForm
 
 
-from models import Distributor, Zip, Product, RetailProduct, Base, User
+from models import Distributor, Zip, Product, RetailProduct, Base, User, ProductCategory, Order, OrderItem
 from session import db_session, engine
 from sqlalchemy.pool import SingletonThreadPool
 
@@ -74,9 +74,23 @@ class ZipView(BaseAdminView):
 class DistributorView(BaseAdminView):
 	form_excluded_columns = ['zips', ]
 
+
+class ProductCategoryView(BaseAdminView):
+	form_columns = ('name',)
+	list_columns = ('name',)
+
+
+class ProductView(BaseAdminView):
+	form_columns = ('name', 'description', 'base_price', 'product_category', 'image')
+
+
+
 admin.add_view(DistributorView(Distributor, db_session))
-admin.add_view(BaseAdminView(Product, db_session))
+admin.add_view(ProductView(Product, db_session))
+admin.add_view(ProductCategoryView(ProductCategory, db_session))
 admin.add_view(BaseAdminView(RetailProduct, db_session))
+admin.add_view(BaseAdminView(Order, db_session))
+admin.add_view(BaseAdminView(OrderItem, db_session))
 admin.add_view(ZipView(Zip, db_session))
 
 parser = reqparse.RequestParser()
@@ -137,7 +151,7 @@ cart_items_schema = CartItemSchema(many=True)
 class Cart(Resource):
 	def post(self):
 		product_id = request.json.get('product_id')
-		qty = request.json.get('qty')
+		qty = int(request.json.get('qty'))
 
 		current_cart = session.get("cart", {})
 		prod_cnt = current_cart.get(product_id, 0)
@@ -176,19 +190,35 @@ api.add_resource(Cart, '/api/cart')
 
 class RetailProductSchema(ma.Schema):
 	class Meta:
-		fields = ("id", "distributor_id", "product_id", "price", "name", "description", "image")
+		fields = ("id", "distributor_id", "product_id", "price", "name", "description", "image", "display_price", "can_order")
 product_schema = RetailProductSchema()
 products_schema = RetailProductSchema(many=True)
 
 
 class Products(Resource):
 	def get(self, distributor_id):
+		args = request.args
+
 		products = db_session.query(RetailProduct).join(Product).filter(RetailProduct.distributor_id==distributor_id)
+
+		if args.get("cat") and args.get("cat") != 'All':
+			products = products.filter(Product.product_category == args.get("cat"))
+
 		return {'products': products_schema.dump(products), 'user': session.get('user'),
 				'count': len(session.get("cart", {}))}
 
 api.add_resource(Products, '/api/products/<int:distributor_id>')
 
+
+class ProductApi(Resource):
+	def get(self, id):
+		product = db_session.query(RetailProduct).filter(RetailProduct.id == id).first()
+		if not product:
+			return "Not found", 404
+		return {'product': product_schema.dump(product), 'user': session.get('user'),
+				'count': len(session.get("cart", {}))}
+
+api.add_resource(ProductApi, '/api/product/<int:id>')
 
 # @app.route('/api/register')
 # def register():
@@ -201,27 +231,65 @@ api.add_resource(Products, '/api/products/<int:distributor_id>')
 # 	return jsonify(response_object)
 
 
-@app.route('/charge', methods=['POST'])
+@app.route('/api/charge', methods=['POST'])
 def create_charge():
 	post_data = request.get_json()
-	amount = round(float(post_data.get('book')['price']) * 100)
-	stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+	amount = round(float(post_data.get('total').strip("$")) * 100)
+
+	current_cart = session.get("cart", {})
+	products = db_session.query(RetailProduct).join(Product).filter(RetailProduct.id.in_(current_cart.keys()))
+
+	id_to_prod = {}
+	distributor_id = None
+	for product in products:
+		if not distributor_id:
+			distributor_id = product.distributor_id
+		id_to_prod[product.id] = product
+	grand_total = 0
+
+	for prod_id, qty in current_cart.items():
+		retail_prod = id_to_prod[prod_id]
+		price = retail_prod.price
+		grand_total += price * qty
+
+	if grand_total != amount:
+		return {"something went wrong"}, 400
+
+	stripe.api_key = 'sk_test_ZIhkqTdUPX3vIAjGbvgKSBj900rIS9blAJ'
 	charge = stripe.Charge.create(
 		amount=amount,
 		currency='usd',
 		card=post_data.get('token'),
-		description=post_data.get('book')['title']
+		description="order"
 	)
 	response_object = {
 		'status': 'success',
 		'charge': charge
 	}
+	user = session["user"]
+	if charge.status == 'succeeded':
+		order = Order(distributor_id=distributor_id, submitted_at=datetime.datetime.now(),
+					  payed_at=datetime.datetime.now(),name=user['fllname'], email=user['email'], zip=user['zipcode'],
+					  address='1 main', city='Spokane', state='WA', phone='44455566')
+
+		db_session.add(order)
+		db_session.commit()
+
+		for prod_id, qty in current_cart.items():
+			retail_prod = id_to_prod[prod_id]
+			price = retail_prod.price
+			oi = OrderItem(order_id=order.id, purchase_price=price, qty=qty, retail_product_id=prod_id)
+			db_session.add(oi)
+		db_session.commit()
+
+		session["cart"] = {}
+
 	return jsonify(response_object), 200
 
 
-@app.route('/charge/<charge_id>')
+@app.route('/api/charge/<charge_id>')
 def get_charge(charge_id):
-    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+    stripe.api_key = 'sk_test_ZIhkqTdUPX3vIAjGbvgKSBj900rIS9blAJ'
     response_object = {
         'status': 'success',
         'charge': stripe.Charge.retrieve(charge_id)
@@ -234,46 +302,47 @@ def root():
     products = datastore_client.query(kind="deal_product").fetch(limit=5)
     return render_template('index.html', products=products, num_products=5)
 
-@app.route('/product_test')
-def product_test():
-	start = datetime.datetime.now()
 
-	products = datastore_client.query(kind="social_socialagg").fetch(limit=100)
-	display_products = []
-	for product in products:
-		display_products.append(product)
-	delta_load = datetime.datetime.now() - start
-
-	start = datetime.datetime.now()
-	batch = datastore_client.batch()
-	with batch:
-		for product in display_products:
-			product.update({'rel_6_34_backup_pricing_unit': 'ci'})
-			batch.put(product)
-	delta_save = datetime.datetime.now() - start	
-
-	return render_template('load_save_delta.html', products=display_products, 
-		delta_load=delta_load.total_seconds(), num_products=len(display_products),
-		delta_save=delta_save.total_seconds()
-		)
-
-@app.route('/product_test_loop_put')
-def product_test_loop_put():
-	start = datetime.datetime.now()
-	products = datastore_client.query(kind="social_socialagg").fetch(limit=100)
-	display_products = []
-	delta_each = []
-	for product in products:
-		start_each = datetime.datetime.now()
-		product.update({'rel_6_34_backup_pricing_unit': 'ci'})
-		datastore_client.put(product)
-		delta = datetime.datetime.now() - start_each
-		display_products.append([product, delta.total_seconds()])
-	delta = datetime.datetime.now() - start
-	return render_template('save_each.html', products=disaplay_products,
-		microseconds=delta.total_seconds(), num_products=len(display_products),
-		project=datastore_client.project
-		)
+# @app.route('/product_test')
+# def product_test():
+# 	start = datetime.datetime.now()
+#
+# 	products = datastore_client.query(kind="social_socialagg").fetch(limit=100)
+# 	display_products = []
+# 	for product in products:
+# 		display_products.append(product)
+# 	delta_load = datetime.datetime.now() - start
+#
+# 	start = datetime.datetime.now()
+# 	batch = datastore_client.batch()
+# 	with batch:
+# 		for product in display_products:
+# 			product.update({'rel_6_34_backup_pricing_unit': 'ci'})
+# 			batch.put(product)
+# 	delta_save = datetime.datetime.now() - start
+#
+# 	return render_template('load_save_delta.html', products=display_products,
+# 		delta_load=delta_load.total_seconds(), num_products=len(display_products),
+# 		delta_save=delta_save.total_seconds()
+# 		)
+#
+# @app.route('/product_test_loop_put')
+# def product_test_loop_put():
+# 	start = datetime.datetime.now()
+# 	products = datastore_client.query(kind="social_socialagg").fetch(limit=100)
+# 	display_products = []
+# 	delta_each = []
+# 	for product in products:
+# 		start_each = datetime.datetime.now()
+# 		product.update({'rel_6_34_backup_pricing_unit': 'ci'})
+# 		datastore_client.put(product)
+# 		delta = datetime.datetime.now() - start_each
+# 		display_products.append([product, delta.total_seconds()])
+# 	delta = datetime.datetime.now() - start
+# 	return render_template('save_each.html', products=disaplay_products,
+# 		microseconds=delta.total_seconds(), num_products=len(display_products),
+# 		project=datastore_client.project
+# 		)
 
 
 if __name__ == "__main__":

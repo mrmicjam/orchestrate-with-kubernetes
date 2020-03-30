@@ -6,6 +6,8 @@ import OrderComplete from './components/OrderComplete.vue';
 import Register from './components/Register.vue';
 import Products from './components/Products.vue';
 import Cart from './components/Cart.vue';
+import CatProducts from "./components/CatProducts.vue";
+import Product from "./components/Product.vue";
 
 Vue.use(Router);
 
@@ -19,9 +21,19 @@ export default new Router({
       component: Register,
     },
     {
-      path: '/products/:distributor_id',
+      path: '/old_products/:distributor_id',
       name: 'Products',
       component: Products,
+    },
+    {
+      path: '/products/:distributor_id',
+      name: 'CatProducts',
+      component: CatProducts,
+    },
+    {
+      path: '/product/:product_id',
+      name: 'Product',
+      component: Product,
     },
     {
       path: '/cart/',

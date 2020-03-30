@@ -39,8 +39,7 @@
                        required>
               </div>
               <button class="btn btn-primary btn-block"
-                      @click.prevent="validate"
-                      :disabled="stripeCheck">
+                      @click.prevent="validate">
                   Submit
               </button>
             </form>
@@ -109,9 +108,6 @@ export default {
           console.error(error);
         });
     }
-  },
-  created() {
-    this.getBook();
   },
 };
 </script>

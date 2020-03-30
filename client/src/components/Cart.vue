@@ -103,7 +103,7 @@ export default {
         exp: '',
       },
       errors: [],
-      stripePublishableKey: 'pk_test_aIh85FLcNlk7A6B26VZiNj1h',
+      stripePublishableKey: 'pk_test_bGU7XZ1JwELPbKV7A30BCJV8003tFkQErm',
       stripeCheck: false,
     };
   },

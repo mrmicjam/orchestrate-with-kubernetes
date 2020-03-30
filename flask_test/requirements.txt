@@ -18,3 +18,4 @@ flask_session
 flask_sqlalchemy
 marshmallow-sqlalchemy
 flask_wtf
+sqlalchemy_utils

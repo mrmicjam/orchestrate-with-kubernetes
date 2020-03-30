@@ -21,7 +21,7 @@ export default {
   },
   methods: {
     getChargeInfo() {
-      const path = `http://localhost:5000/charge/${this.$route.params.id}`;
+      const path = `/api/charge/${this.$route.params.id}`;
       axios.get(path)
         .then((res) => {
           this.book = res.data.charge.description;

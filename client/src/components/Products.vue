@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-  <h1> {{user.fllname}} - {{count}}</h1>
+    <h1> <a href="/cart">Cart - {{count}}</a></h1>
   <table class="table table-hover">
 
     <thead>
